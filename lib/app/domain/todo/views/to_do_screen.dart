@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ToDoScreen extends StatelessWidget {
   const ToDoScreen({super.key});
@@ -51,65 +53,46 @@ class KanbanBoard extends StatefulWidget {
 class _KanbanBoardState extends State<KanbanBoard> {
   Offset dragStartPosition = Offset.zero;
 
-  final Map<String, dynamic> schedule = {
-    'todo': [
-      {
-        'title': '방 청소하기',
-        'content': '거실, 안방, 작은방 치우기',
-        'worker': 'ㅇ',
-        'index': 0,
-        'status': 'todo',
-      },
-      {
-        'title': '책 읽기',
-        'content': '자기 계발서 읽기',
-        'worker': 'ㅇ',
-        'index': 1,
-        'status': 'todo',
-      },
-    ],
-    'urgent': [
-      {
-        'title': '서류 정리하기',
-        'content': '계약서, 영수증 정리',
-        'worker': 'ㄱ',
-        'index': 0,
-        'status': 'urgent',
-      },
-      {
-        'title': '회의 준비하기',
-        'content': '회의 자료 작성 및 인쇄',
-        'worker': 'ㄱ',
-        'index': 1,
-        'status': 'urgent',
-      },
-    ],
-    'doing': [
-      {
-        'title': '코드 작성',
-        'content': 'Flutter 프로젝트 개발',
-        'worker': 'ㄴ',
-        'index': 0,
-        'status': 'doing',
-      },
-    ],
-    'finish': [
-      {
-        'title': '운동하기',
-        'content': '헬스장 가서 운동',
-        'worker': 'ㅇ',
-        'index': 0,
-        'status': 'finish',
-      },
-      {
-        'title': '설거지하기',
-        'content': '저녁 식사 후 설거지',
-        'worker': 'ㅇ',
-        'index': 1,
-        'status': 'finish',
-      },
-    ],
+  Map<String, List<Map<String, dynamic>>> schedule = {
+    'todo': [],
+    'urgent': [],
+    'doing': [],
+    'finish': [],
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    final querySnapshot =
+        await FirebaseFirestore.instance.collection('tasks').get();
+    final data = querySnapshot.docs.map((doc) => doc.data()).toList();
+
+    setState(() {
+      schedule = {
+        'todo': data.where((task) => task['status'] == 'todo').toList(),
+        'urgent': data.where((task) => task['status'] == 'urgent').toList(),
+        'doing': data.where((task) => task['status'] == 'doing').toList(),
+        'finish': data.where((task) => task['status'] == 'finish').toList(),
+      };
+    });
+  }
+
+  Future<void> _updateTask(
+      Map<String, dynamic> task, String newStatus, int newIndex) async {
+    await FirebaseFirestore.instance
+        .collection('tasks')
+        .doc(task['id'])
+        .update({
+      'status': newStatus,
+      'index': newIndex,
+    });
+
+    _fetchData();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +103,7 @@ class _KanbanBoardState extends State<KanbanBoard> {
         children: schedule.keys.map((key) {
           return _buildColumn(
             title: key,
-            items: schedule[key],
+            items: schedule[key] ?? [],
           );
         }).toList(),
       ),
@@ -132,9 +115,11 @@ class _KanbanBoardState extends State<KanbanBoard> {
     required List<Map<String, dynamic>> items,
   }) {
     return DragTarget<Map<String, dynamic>>(
-      onAcceptWithDetails: (details) {
+      onAcceptWithDetails: (details) async {
+        final data = details.data;
+        await _updateTask(data, title, items.length);
+
         setState(() {
-          final data = details.data;
           schedule[data['status']]!.remove(data);
           data['status'] = title;
           schedule[title]!.add(data);
@@ -160,29 +145,34 @@ class _KanbanBoardState extends State<KanbanBoard> {
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
-                    return Draggable(
-                      data: item,
-                      feedback: scheduleCard(item, isDragging: true),
-                      childWhenDragging: Opacity(
-                        opacity: 0.5,
+                    return GestureDetector(
+                      onTap: () {
+                        context.replace('/modal/${item['id']}');
+                      },
+                      child: Draggable(
+                        data: item,
+                        feedback: scheduleCard(item, isDragging: true),
+                        childWhenDragging: Opacity(
+                          opacity: 0.5,
+                          child: scheduleCard(item),
+                        ),
                         child: scheduleCard(item),
+                        onDragStarted: () {
+                          dragStartPosition = Offset.zero;
+                        },
+                        onDragUpdate: (details) {
+                          dragStartPosition = details.globalPosition;
+                        },
+                        onDragEnd: (details) {
+                          final dragDistance =
+                              (dragStartPosition - details.offset).distance;
+                          if (dragDistance < 50) {
+                            setState(() {
+                              item['status'] = title;
+                            });
+                          }
+                        },
                       ),
-                      child: scheduleCard(item),
-                      onDragStarted: () {
-                        dragStartPosition = Offset.zero;
-                      },
-                      onDragUpdate: (details) {
-                        dragStartPosition = details.globalPosition;
-                      },
-                      onDragEnd: (details) {
-                        final dragDistance =
-                            (dragStartPosition - details.offset).distance;
-                        if (dragDistance < 50) {
-                          setState(() {
-                            item['status'] = title;
-                          });
-                        }
-                      },
                     );
                   },
                 ),
@@ -214,14 +204,16 @@ class _KanbanBoardState extends State<KanbanBoard> {
                     ),
                   ),
                   IconButton(
-                      onPressed: () {}, icon: const Icon(Icons.more_horiz))
+                    onPressed: () {},
+                    icon: const Icon(Icons.more_horiz),
+                  )
                 ],
               ),
               const SizedBox(height: 4),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(item['content']),
+                  Text(item['id']),
                   const CircleAvatar(
                     child: Icon(Icons.person_sharp),
                   ),
