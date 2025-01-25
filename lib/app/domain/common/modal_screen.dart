@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ModalScreen extends StatefulWidget {
   final String id;
+
   const ModalScreen({super.key, required this.id});
 
   @override
@@ -11,6 +13,16 @@ class ModalScreen extends StatefulWidget {
 class _ModalScreenState extends State<ModalScreen> {
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return AlertDialog(
+      content: const Text('This is the modal content.'),
+      actions: [
+        TextButton(
+          onPressed: () {
+            context.pop();
+          },
+          child: const Text('Close'),
+        ),
+      ],
+    );
   }
 }
