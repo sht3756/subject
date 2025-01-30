@@ -1,18 +1,24 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ToDoModel {
   final String id;
   final String title;
   final String content;
-  final int index;
+  final int? weight;
   final String status;
   final String worker;
+  final Timestamp? createDate;
+  bool? isDelete;
 
   ToDoModel({
     required this.id,
     required this.title,
     required this.content,
-    required this.index,
+    required this.weight,
     required this.status,
     required this.worker,
+    required this.createDate,
+    this.isDelete,
   });
 
   factory ToDoModel.fromJson(Map<String, dynamic> json) {
@@ -20,9 +26,11 @@ class ToDoModel {
       id : json['id'],
       title : json['title'],
       content : json['content'],
-      index : json['index'],
+      weight : json['weight'],
       status : json['status'],
       worker : json['worker'],
+      createDate : json['createDate'],
+      isDelete: json['isDelete'],
     );
   }
 
@@ -31,9 +39,11 @@ class ToDoModel {
       'id': id,
       'title': title,
       'content': content,
-      'index': index,
+      'weight': weight,
       'status': status,
       'worker': worker,
+      'createDate' : createDate,
+      'isDelete' : isDelete,
     };
   }
 }
