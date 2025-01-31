@@ -14,7 +14,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final nameController = TextEditingController();
-  late bool isLoginMode = false;
+  late bool isSignInMode = false;
   late bool isHover = false;
 
   @override
@@ -36,11 +36,11 @@ class _SignInScreenState extends State<SignInScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    isLoginMode ? '회원가입' : '로그인',
+                    isSignInMode ? '회원가입' : '로그인',
                     style: const TextStyle(fontSize: 25),
                   ),
                   const SizedBox(height: 10),
-                  if (isLoginMode) ...[
+                  if (isSignInMode) ...[
                     TextFormField(
                       keyboardType: TextInputType.name,
                       controller: nameController,
@@ -67,7 +67,9 @@ class _SignInScreenState extends State<SignInScreen> {
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return '이메일을 입력해주세요.';
-                      } else if (!RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}").hasMatch(value)) {
+                      } else if (!RegExp(
+                              r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
+                          .hasMatch(value)) {
                         return '올바른 이메일 형식을 입력해주세요.';
                       }
                       return null;
@@ -101,13 +103,13 @@ class _SignInScreenState extends State<SignInScreen> {
                     onTap: () async {
                       if (_formKey.currentState!.validate()) {
                         try {
-                          if (isLoginMode) {
-                            await AuthController.to.signIn(
+                          if (isSignInMode) {
+                            await AuthController.to.register(
                               emailController.text.trim(),
                               passwordController.text.trim(),
                             );
                           } else {
-                            await AuthController.to.register(
+                            await AuthController.to.signIn(
                               emailController.text.trim(),
                               passwordController.text.trim(),
                             );
@@ -133,8 +135,9 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            isLoginMode ? '가입하기' : '로그인',
-                            style: const TextStyle(color: Colors.white, fontSize: 20),
+                            isSignInMode ? '가입하기' : '로그인',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 20),
                           ),
                         ],
                       ),
@@ -144,16 +147,16 @@ class _SignInScreenState extends State<SignInScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(isLoginMode ? '이미 계정이 있습니까?' : '계정이 없습니까?'),
+                      Text(isSignInMode ? '이미 계정이 있습니까?' : '계정이 없습니까?'),
                       const SizedBox(width: 5),
                       InkWell(
                         onTap: () {
                           setState(() {
-                            isLoginMode = !isLoginMode;
+                            isSignInMode = !isSignInMode;
                           });
                         },
                         child: Text(
-                          isLoginMode ? '여기에서 로그인하세요!' : '여기에서 가입하세요!',
+                          isSignInMode ? '여기에서 로그인하세요!' : '여기에서 가입하세요!',
                           style: const TextStyle(color: Colors.orange),
                         ),
                       ),
