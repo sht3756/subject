@@ -14,7 +14,7 @@ class AppRouter {
       binding: AuthBinding(),
     ),
     GetPage(
-      name: '/todo',
+      name: '/',
       page: () => const ToDoScreen(),
       binding: ToDoBiding(),
       middlewares: [AuthMiddleware()],
