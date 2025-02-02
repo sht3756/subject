@@ -36,7 +36,6 @@ Widget scheduleCard(
                 ],
               ),
               const SizedBox(height: 4),
-              Text(item.weight.toString()),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
