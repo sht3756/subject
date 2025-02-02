@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -7,13 +9,20 @@ import 'package:subject/core/utils/firebase_config.dart';
 
 import 'core/bindings/auth_binding.dart';
 import 'core/routes/app_route.dart';
+import 'package:logger/logger.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
-  await Firebase.initializeApp(options: FirebaseConfig.options);
-  Get.put(AuthController());
-  runApp(const MyApp());
+  final Logger logger = Logger();
+
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    await dotenv.load();
+    await Firebase.initializeApp(options: FirebaseConfig.options);
+    Get.put(AuthController());
+    runApp(const MyApp());
+  }, (error, stackTrace) {
+    logger.w('[runZonedGuarded] $error, $stackTrace');
+  });
 }
 
 class MyApp extends StatelessWidget {

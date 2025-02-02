@@ -34,44 +34,42 @@ class _ToDoColumnState extends State<ToDoColumn> {
   Widget build(BuildContext context) {
     return DragTarget<ToDoModel>(
       onMove: (details) {
-      //   if (!mounted) return;
+        if (!mounted) return;
         controller.setDraggingItem(controller.draggingItem.value);
-      //
-      //   final RenderBox columnBox =
-      //       widget.globalKey.currentContext!.findRenderObject() as RenderBox;
-      //   final columnPosition = columnBox.localToGlobal(Offset.zero);
-      //
-      //   setState(() {
-      //     localPosition = details.offset - columnPosition;
-      //
-      //     final double dragY = localPosition.dy;
-      //     const double cardHeight = 120;
-      //     const double cardSpacing = 4;
-      //     const double totalCardHeight = cardHeight + cardSpacing;
-      //     int? newUnderLineIndex;
-      //
-      //     if (widget.items.isEmpty) {
-      //       newUnderLineIndex = 0;
-      //     } else {
-      //       for (int i = 0; i < widget.items.length; i++) {
-      //         final double cardMiddleY =
-      //             (i * totalCardHeight) + (cardHeight / 2);
-      //
-      //         if (dragY < totalCardHeight / 2) {
-      //           newUnderLineIndex = 0;
-      //           break;
-      //         }
-      //
-      //         if (dragY > cardMiddleY) {
-      //           newUnderLineIndex = i + 1;
-      //         }
-      //       }
-      //     }
-      //
-      //     underLineIndex = newUnderLineIndex;
-      //   });
+        final RenderBox columnBox =
+            widget.globalKey.currentContext!.findRenderObject() as RenderBox;
+        final columnPosition = columnBox.localToGlobal(Offset.zero);
+
+        setState(() {
+          localPosition = details.offset - columnPosition;
+
+          final double dragY = localPosition.dy;
+          const double cardHeight = 120;
+          const double cardSpacing = 4;
+          const double totalCardHeight = cardHeight + cardSpacing;
+          int? newUnderLineIndex;
+
+          if (widget.items.isEmpty) {
+            newUnderLineIndex = 0;
+          } else {
+            for (int i = 0; i < widget.items.length; i++) {
+              final double cardMiddleY =
+                  (i * totalCardHeight) + (cardHeight / 2);
+
+              if (dragY < totalCardHeight / 2) {
+                newUnderLineIndex = 0;
+                break;
+              }
+
+              if (dragY > cardMiddleY) {
+                newUnderLineIndex = i + 1;
+              }
+            }
+          }
+
+          underLineIndex = newUnderLineIndex;
+        });
       },
-      // onAccept 시 details 로 offset 얻기 가능
       onAcceptWithDetails: (details) async {
         if (!mounted) return;
         final item = details.data;
