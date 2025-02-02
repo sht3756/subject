@@ -6,6 +6,7 @@ import 'package:subject/app/domain/todo/services/to_do_service.dart';
 class ToDoController extends GetxController {
   final ToDoService _toDoService = ToDoService();
   final Map<String, GlobalKey> columnKeys = {};
+  Rxn<ToDoModel> draggingItem = Rxn<ToDoModel>();
 
   RxMap<String, List<ToDoModel>> schedule = {
     'todo': <ToDoModel>[],
@@ -21,6 +22,7 @@ class ToDoController extends GetxController {
     for (var key in schedule.keys) {
       columnKeys[key] = GlobalKey();
     }
+
   }
 
   Future<void> fetchTaskData() async {
@@ -36,10 +38,8 @@ class ToDoController extends GetxController {
       }
 
       schedule.value = sortTask(data);
+      update();
 
-      for (var key in schedule.keys) {
-        columnKeys[key] = GlobalKey();
-      }
     } catch (e) {
       Get.snackbar('Error', 'fetchTaskData: ${e.toString()}');
     }
@@ -71,20 +71,6 @@ class ToDoController extends GetxController {
     }
   }
 
-  // 위치 수정
-  Future<void> updateTask(
-    ToDoModel task,
-    String newStatus,
-    int newIndex,
-  ) async {
-    try {
-      await _toDoService.updateTaskStatus(task.id, newStatus, newIndex);
-      await fetchTaskData();
-    } catch (e) {
-      Get.snackbar('Error', 'updateTask: ${e.toString()}');
-    }
-  }
-
   // 삭제
   Future<void> deleteTask(String id) async {
     try {
@@ -95,6 +81,38 @@ class ToDoController extends GetxController {
       }
     } catch (e) {
       Get.snackbar('Error', 'deleteTask: ${e.toString()}');
+    }
+  }
+
+  double calculateNewWeight(int newIndex, List<ToDoModel> todoList) {
+    if (todoList.isEmpty) {
+      return 1000; // 리스트가 비어있다면 기본 weight = 1000
+    }
+    if (newIndex == 0) {
+      return todoList.first.weight! - 100; // 리스트 맨 위로 이동시 기존 첫번째 weight - 100
+    }
+    if (newIndex >= todoList.length) {
+      return todoList.last.weight! + 100; // 리스트 맨 아래로 이동시 기존 마지막 weight + 100
+    }
+    // 중간 위치로 이동시  위/아래 weight 평균 값 / 2
+    double upperWeight = todoList[newIndex - 1].weight!;
+    double lowerWeight = todoList[newIndex].weight!;
+    return (upperWeight + lowerWeight) / 2;
+  }
+
+  void setDraggingItem(ToDoModel? item) {
+    draggingItem.value = item;
+    update();
+  }
+
+  Future<void> updateTaskPosition(
+      String taskId, String newStatus, double newWeight) async {
+    try {
+      _toDoService.updateTaskStatus(taskId, newStatus, newWeight);
+
+      await fetchTaskData();
+    } catch (e) {
+      Get.snackbar('Error', '테스트 업데이트 실패 $e');
     }
   }
 }

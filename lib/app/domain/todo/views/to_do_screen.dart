@@ -11,42 +11,34 @@ class ToDoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('프로젝트')),
-      body: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Drawer(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      const DrawerHeader(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.person_3_rounded),
-                            Text('TODO'),
-                          ],
-                        ),
-                      ),
-                      TextButton.icon(
-                        label: const Text('로그아웃'),
-                        onPressed: () {
-                          AuthController.to.signOut();
-                        },
-                      )
-                    ],
-                  ),
-                ),
+      appBar: AppBar(
+        centerTitle: true,
+        title: const Text(
+          'HIT',
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Visibility(
+              visible: AuthController.to.myUserData.value != null,
+              child:
+              Text('${AuthController.to.myUserData.value?.name} 님' ?? ''),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: InkWell(
+              onTap: () => AuthController.to.signOut(),
+              child: const Icon(
+                Icons.logout_outlined,
+                size: 24,
               ),
             ),
-            const Expanded(
-              flex: 5,
-              child: KanbanBoard(),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
+      body: const SafeArea(
+        child: Center(child: KanbanBoard()),
       ),
     );
   }
@@ -73,7 +65,7 @@ class _KanbanBoardState extends State<KanbanBoard> {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Obx(
-        () => Row(
+            () => Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: controller.schedule.keys.map((key) {
             return ToDoColumn(

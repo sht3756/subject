@@ -7,10 +7,11 @@ Widget scheduleCard(
   VoidCallback? deleteOnPressed,
 }) {
   return Opacity(
-    opacity: isDragging ? 0.8 : 1.0,
+    opacity: isDragging ? 0.5 : 1.0,
     child: SizedBox(
       height: 120,
       child: Card(
+        color: Colors.white,
         margin: EdgeInsets.zero,
         elevation: isDragging ? 10 : 2,
         child: Padding(
@@ -35,12 +36,25 @@ Widget scheduleCard(
                 ],
               ),
               const SizedBox(height: 4),
+              Text(item.weight.toString()),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(item.id),
-                  const CircleAvatar(
-                    child: Icon(Icons.person_sharp),
+                  CircleAvatar(
+                    backgroundColor: Colors.black,
+                    child: item.worker.isNotEmpty
+                        ? Text(
+                            item.worker.characters.first,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                          ),
                   ),
                 ],
               ),

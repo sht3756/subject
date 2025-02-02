@@ -4,7 +4,7 @@ class ToDoModel {
   final String id;
   final String title;
   final String content;
-  final int? weight;
+  final double? weight;
   final String status;
   final String worker;
   final Timestamp? createDate;

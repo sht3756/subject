@@ -68,11 +68,11 @@ class ToDoService {
   }
 
   Future<void> updateTaskStatus(
-      String taskId, String newStatus, int newIndex) async {
-    // await _fb.collection('tasks').doc(taskId).update({
-    //   'status': newStatus,
-    //   'index': newIndex,
-    // });
+      String taskId, String newStatus, double newWeight) async {
+    await _fb.collection('tasks').doc(taskId).update({
+      'status': newStatus,
+      'weight': newWeight,
+    });
   }
 
   Future<bool> deleteTask(String id) async {
@@ -83,11 +83,4 @@ class ToDoService {
       return false;
     }
   }
-
-// TODO : 삭제 서비스, 컨트롤, 컨펌모달,
-// TODO : 로거 추가
-// TODO : Get.snackbar 왜 안나오는지 체크
-// TODO : 드래그앤 드랍 로직 수정
-// TODO : UI 수정
-// TODO : 노션 정리
 }

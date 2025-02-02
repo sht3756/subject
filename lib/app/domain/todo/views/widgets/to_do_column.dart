@@ -25,10 +25,10 @@ class ToDoColumn extends StatefulWidget {
 }
 
 class _ToDoColumnState extends State<ToDoColumn> {
+  final controller = Get.find<ToDoController>();
   Offset localPosition = Offset.zero;
   int? underLineIndex;
-  String? selectTodo;
-  final controller = Get.find<ToDoController>();
+  int? selectedFeedBackIndex;
 
   void showModal({
     ToDoModel? todo,
@@ -45,8 +45,10 @@ class _ToDoColumnState extends State<ToDoColumn> {
   @override
   Widget build(BuildContext context) {
     return DragTarget<ToDoModel>(
+      // Draggalbe 위젯이 DragTarget 위에서 움직이는 동안 동작
       onMove: (details) {
         if (!mounted) return;
+        controller.setDraggingItem(controller.draggingItem.value);
 
         final RenderBox columnBox =
             widget.globalKey.currentContext!.findRenderObject() as RenderBox;
@@ -59,55 +61,49 @@ class _ToDoColumnState extends State<ToDoColumn> {
           const double cardHeight = 120;
           const double cardSpacing = 4;
           const double totalCardHeight = cardHeight + cardSpacing;
+          int? newUnderLineIndex;
 
-          if (dragY < 0) {
-            // 맨 위
-            underLineIndex = -1;
-          } else if (dragY > columnBox.size.height) {
-            // 마지막
-            underLineIndex = widget.items.length;
+          if (widget.items.isEmpty) {
+            newUnderLineIndex = 0;
           } else {
-            // 가운데 일때
             for (int i = 0; i < widget.items.length; i++) {
-              final double cardStartY = i * totalCardHeight;
-              final double cardEndY = cardStartY + totalCardHeight;
+              final double cardMiddleY =
+                  (i * totalCardHeight) + (cardHeight / 2);
 
-              // 정위치
-              if (dragY >= cardStartY && dragY < cardEndY) {
-                underLineIndex = i;
+              if (dragY < totalCardHeight / 2) {
+                newUnderLineIndex = 0;
                 break;
-              } else if (dragY >= cardEndY &&
-                  dragY <= cardEndY + totalCardHeight) {
-                // 아래
-                underLineIndex = i + 1;
-                break;
+              }
+
+              if (dragY > cardMiddleY) {
+                newUnderLineIndex = i + 1;
               }
             }
           }
-          selectTodo = widget.status;
+
+          underLineIndex = newUnderLineIndex;
         });
       },
+      // onAccept 시 details 로 offset 얻기 가능
       onAcceptWithDetails: (details) async {
         if (!mounted) return;
-        final data = details.data;
+        final item = details.data;
+        int newIndex = underLineIndex ?? widget.items.length;
+        double newWeight =
+            controller.calculateNewWeight(newIndex, widget.items);
 
         setState(() {
-          controller.schedule[data.status]!.remove(data);
-          controller.schedule[widget.status]!.add(data);
-
-          selectTodo = null;
-          underLineIndex = null;
+          widget.items.remove(item);
+          widget.items.insert(underLineIndex ?? widget.items.length, item);
+          controller.setDraggingItem(null);
         });
 
-        await controller.updateTask(data, widget.status, widget.items.length);
+        await controller.updateTaskPosition(item.id, widget.status, newWeight);
       },
       onLeave: (data) {
         if (!mounted) return;
         setState(() {
-          if (selectTodo == widget.status) {
-            selectTodo = null;
-            underLineIndex = null;
-          }
+          underLineIndex = null;
         });
       },
       builder: (context, candidateData, rejectedData) {
@@ -120,51 +116,65 @@ class _ToDoColumnState extends State<ToDoColumn> {
             borderRadius: BorderRadius.circular(8.0),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(widget.status),
+                  Text(
+                    widget.status,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   addToDoButton(() {
                     // 새로 생성
                     showModal(
                         isEditMode: true,
                         onSave: (todo) {
-                          controller.createTask(ToDoModel(
-                            id: '',
-                            title: todo['title'].text,
-                            content: todo['content'].text,
-                            weight: 0,
-                            status: widget.status,
-                            worker: todo['worker'] ?? '',
-                            createDate: null,
-                          ));
+                          controller.createTask(
+                            ToDoModel(
+                              id: '',
+                              title: todo['title'].text,
+                              content: todo['content'].text,
+                              weight: 0,
+                              status: widget.status,
+                              worker: todo['worker'] ?? '',
+                              createDate: null,
+                            ),
+                          );
                         });
                   }),
                 ],
               ),
               Expanded(
                 child: ListView.builder(
-                  itemCount: widget.items.length,
+                  itemCount: widget.items.length +
+                      (controller.draggingItem.value != null ? 1 : 0),
                   itemBuilder: (context, index) {
-                    final item = widget.items[index];
+                    if (controller.draggingItem.value != null &&
+                        index == underLineIndex) {
+                      return Opacity(
+                        opacity: 0.5,
+                        child: scheduleCard(controller.draggingItem.value!,
+                            isDragging: true),
+                      );
+                    }
+
+                    final realIndex = controller.draggingItem.value != null &&
+                            index > (underLineIndex ?? widget.items.length)
+                        ? index - 1
+                        : index;
+
+                    if (realIndex >= widget.items.length) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final item = widget.items[realIndex];
+
                     return Column(
                       children: [
-                        if (index == 0 &&
-                            underLineIndex == -1 &&
-                            selectTodo == widget.status) ...[
-                          Container(
-                            height: 4,
-                            width: 300,
-                            color: Colors.blue,
-                          ),
-                        ] else if (index == 0) ...[
-                          const SizedBox(height: 4),
-                        ],
+                        const SizedBox(height: 4),
                         InkWell(
                           onTap: () {
                             // 업데이트
@@ -189,14 +199,30 @@ class _ToDoColumnState extends State<ToDoColumn> {
                               width: 300,
                               child: scheduleCard(item, isDragging: true),
                             ),
-                            childWhenDragging: Opacity(
-                              opacity: 0.5,
-                              child: scheduleCard(item),
-                            ),
+                            onDragStarted: () {
+                              controller.setDraggingItem(item);
+                              setState(() {
+                                selectedFeedBackIndex = realIndex;
+                              });
+                            },
+                            onDragUpdate: (detail) {
+                              if (selectedFeedBackIndex != null &&
+                                  selectedFeedBackIndex! <
+                                      widget.items.length) {
+                                setState(() {
+                                  widget.items.removeAt(selectedFeedBackIndex!);
+                                  selectedFeedBackIndex = null;
+                                });
+                              }
+                            },
+                            onDragCompleted: () {
+                              controller.setDraggingItem(null);
+                            },
+                            childWhenDragging: const SizedBox.shrink(),
                             onDragEnd: (details) {
                               setState(() {
                                 underLineIndex = null;
-                                selectTodo = null;
+                                controller.setDraggingItem(null);
                               });
                             },
                             child: scheduleCard(
@@ -223,16 +249,6 @@ class _ToDoColumnState extends State<ToDoColumn> {
                             ),
                           ),
                         ),
-                        if (index == underLineIndex &&
-                            selectTodo == widget.status) ...[
-                          Container(
-                            height: 4,
-                            width: 300,
-                            color: Colors.blue,
-                          )
-                        ] else ...[
-                          const SizedBox(height: 4),
-                        ],
                       ],
                     );
                   },
