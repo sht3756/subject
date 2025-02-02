@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:subject/app/domain/common/modal_screen.dart';
 import 'package:subject/app/domain/todo/controller/to_do_controller.dart';
 import 'package:subject/app/domain/todo/models/to_do_model.dart';
 import 'package:subject/app/domain/todo/views/widgets/add_to_do_button.dart';
@@ -30,17 +29,6 @@ class _ToDoColumnState extends State<ToDoColumn> {
   int? underLineIndex;
   int? selectedFeedBackIndex;
 
-  void showModal({
-    ToDoModel? todo,
-    bool? isEditMode,
-    required Function onSave,
-  }) {
-    Get.dialog(
-      ModalScreen(todo: todo, isEditMode: isEditMode),
-    ).then((result) {
-      onSave(result);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +76,7 @@ class _ToDoColumnState extends State<ToDoColumn> {
       onAcceptWithDetails: (details) async {
         if (!mounted) return;
         final item = details.data;
+
         int newIndex = underLineIndex ?? widget.items.length;
         double newWeight =
             controller.calculateNewWeight(newIndex, widget.items);
@@ -129,7 +118,7 @@ class _ToDoColumnState extends State<ToDoColumn> {
                   ),
                   addToDoButton(() {
                     // 새로 생성
-                    showModal(
+                    controller.showModal(
                         isEditMode: true,
                         onSave: (todo) {
                           controller.createTask(
@@ -178,7 +167,7 @@ class _ToDoColumnState extends State<ToDoColumn> {
                         InkWell(
                           onTap: () {
                             // 업데이트
-                            showModal(
+                            controller.showModal(
                                 todo: item,
                                 onSave: (todo) {
                                   controller.updateTaskDetails(ToDoModel(

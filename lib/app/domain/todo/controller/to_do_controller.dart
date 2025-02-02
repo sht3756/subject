@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:subject/app/domain/common/modal_screen.dart';
 import 'package:subject/app/domain/todo/models/to_do_model.dart';
 import 'package:subject/app/domain/todo/services/to_do_service.dart';
 
@@ -114,5 +115,17 @@ class ToDoController extends GetxController {
     } catch (e) {
       Get.snackbar('Error', '테스트 업데이트 실패 $e');
     }
+  }
+
+  void showModal({
+    ToDoModel? todo,
+    bool? isEditMode,
+    required Function onSave,
+  }) {
+    Get.dialog(
+      ModalScreen(todo: todo, isEditMode: isEditMode),
+    ).then((result) {
+      onSave(result);
+    });
   }
 }
