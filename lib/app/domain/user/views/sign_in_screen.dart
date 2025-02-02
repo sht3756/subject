@@ -107,6 +107,7 @@ class _SignInScreenState extends State<SignInScreen> {
                             await AuthController.to.register(
                               emailController.text.trim(),
                               passwordController.text.trim(),
+                              nameController.text.trim(),
                             );
                           } else {
                             await AuthController.to.signIn(
@@ -114,7 +115,7 @@ class _SignInScreenState extends State<SignInScreen> {
                               passwordController.text.trim(),
                             );
                           }
-                          Get.offNamed('/todo');
+                          Get.offNamed('/');
                         } catch (e) {
                           Get.snackbar("Error", e.toString());
                         }
