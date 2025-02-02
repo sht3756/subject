@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:subject/app/domain/user/models/user_model.dart';
+import 'package:logger/logger.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -9,6 +10,7 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
 
   Stream<User?> authStateChanges() => _auth.authStateChanges();
+  final Logger logger = Logger();
 
   // 이메일과 비밀번호로 로그인
   Future<User?> signInWithEmailAndPassword(
@@ -16,6 +18,7 @@ class AuthService {
     try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
           email: email, password: password);
+      logger.i("[SUCCESS-Service] signInWithEmailAndPassword: $email");
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
       String failMsg = "";
@@ -40,13 +43,20 @@ class AuthService {
           failMsg = '알 수 없는 요청입니다.';
           break;
       }
+
+      logger.e("[Error-Service] signInWithEmailAndPassword: $email $e");
       throw Exception(failMsg);
     }
   }
 
   // 로그아웃
   Future<void> signOut() async {
-    await _auth.signOut();
+    try {
+      await _auth.signOut();
+      logger.i("[SUCCESS-Service] signOut");
+    } catch (e) {
+      logger.e("[Error-Service] signOut: $e");
+    }
   }
 
   // 회원가입
@@ -57,6 +67,7 @@ class AuthService {
           .createUserWithEmailAndPassword(email: email, password: password);
 
       await _createUser(email, password, userCredential, name);
+      logger.i("[SUCCESS-Service] createUserWithEmailAndPassword : $email");
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
       String failMsg = "";
@@ -78,6 +89,7 @@ class AuthService {
           failMsg = 'e ${e.code}';
           break;
       }
+      logger.e("[Error-Service] createUserWithEmailAndPassword: $email $e");
       throw Exception(failMsg);
     }
   }
@@ -98,30 +110,44 @@ class AuthService {
           .collection('users')
           .doc(userModel.email)
           .set(userModel.toJson());
+
+      logger.i("[SUCCESS-Service] createUserWithEmailAndPassword : $email");
     } catch (e) {
-      print(e);
+      logger.e("[Error-Service] _createUser: $email $e");
     }
   }
 
   // 등록된 멤버리스트
   Future<List<UserModel>> fetchUserList() async {
-    QuerySnapshot<Map<String, dynamic>> userDocumentSnapshot =
-        await _fb.collection('users').get();
+    try {
+      QuerySnapshot<Map<String, dynamic>> userDocumentSnapshot =
+          await _fb.collection('users').get();
 
-    if (userDocumentSnapshot.docs.isEmpty) return [];
+      if (userDocumentSnapshot.docs.isEmpty) return [];
+      logger.i("[SUCCESS-Service] fetchUserList");
 
-    return userDocumentSnapshot.docs
-        .map((doc) => UserModel.fromJson(doc.data()))
-        .toList();
+      return userDocumentSnapshot.docs
+          .map((doc) => UserModel.fromJson(doc.data()))
+          .toList();
+    } catch (e) {
+      logger.e("[Error-Service] fetchUserList: $e");
+      return [];
+    }
   }
 
   // 내 정보
   Future<UserModel?> fetchMyUserData(String email) async {
-    QuerySnapshot<Map<String, dynamic>> userDocumentSnapshot =
-        await _fb.collection('users').where('email', isEqualTo: email).get();
+    try {
+      QuerySnapshot<Map<String, dynamic>> userDocumentSnapshot =
+          await _fb.collection('users').where('email', isEqualTo: email).get();
 
-    if (userDocumentSnapshot.docs.isEmpty) return null;
+      if (userDocumentSnapshot.docs.isEmpty) return null;
+      logger.i("[SUCCESS-Service] fetchMyUserData $email");
 
-    return UserModel.fromJson(userDocumentSnapshot.docs.first.data());
+      return UserModel.fromJson(userDocumentSnapshot.docs.first.data());
+    } catch (e) {
+      logger.e("[Error-Service] fetchMyUserData: $email $e");
+      return null;
+    }
   }
 }

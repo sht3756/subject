@@ -3,23 +3,24 @@ import 'package:get/get.dart';
 import 'package:subject/app/domain/common/modal_screen.dart';
 import 'package:subject/app/domain/todo/models/to_do_model.dart';
 import 'package:subject/app/domain/todo/services/to_do_service.dart';
+import 'package:logger/logger.dart';
 
 class ToDoController extends GetxController {
   final ToDoService _toDoService = ToDoService();
   final Map<String, GlobalKey> columnKeys = {};
   Rxn<ToDoModel> draggingItem = Rxn<ToDoModel>();
-
   RxMap<String, List<ToDoModel>> schedule = {
     'todo': <ToDoModel>[],
     'urgent': <ToDoModel>[],
     'doing': <ToDoModel>[],
     'finish': <ToDoModel>[],
   }.obs;
+  final Logger logger = Logger();
 
   @override
   void onInit() {
     super.onInit();
-
+    logger.i("ToDoController 초기화");
     for (var key in schedule.keys) {
       columnKeys[key] = GlobalKey();
     }
@@ -40,9 +41,10 @@ class ToDoController extends GetxController {
 
       schedule.value = sortTask(data);
       update();
-
+      logger.i("[SUCCESS] fetchTaskData");
     } catch (e) {
-      Get.snackbar('Error', 'fetchTaskData: ${e.toString()}');
+      Get.snackbar('Error', 'fetchTaskData');
+      logger.e("[Error] fetchTaskData : $e");
     }
   }
 
@@ -53,9 +55,11 @@ class ToDoController extends GetxController {
       await fetchTaskData();
       if (res == true) {
         Get.snackbar('Success', '등록 성공');
+        logger.i("[SUCCESS] createTask");
       }
     } catch (e) {
-      Get.snackbar('Error', 'createTask: ${e.toString()}');
+      Get.snackbar('Error', '등록 실패 ㅠㅠ');
+      logger.e("[Error] createTask : $e");
     }
   }
 
@@ -66,9 +70,11 @@ class ToDoController extends GetxController {
 
       if (res == true) {
         Get.snackbar('Success', '수정 성공');
+        logger.i("[SUCCESS] updateTaskDetails ${todo.id}");
       }
     } catch (e) {
-      Get.snackbar('Error', 'updateTaskDetails: ${e.toString()}');
+      Get.snackbar('Error', '수정 실패 ㅠㅠ');
+      logger.e("[Error] updateTaskDetails : $e");
     }
   }
 
@@ -79,9 +85,11 @@ class ToDoController extends GetxController {
       if (res == true) {
         await fetchTaskData();
         Get.snackbar('Success', '삭제 성공');
+        logger.i("[SUCCESS] deleteTask $id");
       }
     } catch (e) {
-      Get.snackbar('Error', 'deleteTask: ${e.toString()}');
+      Get.snackbar('Error', '삭제 실패 ㅠㅠ');
+      logger.e("[Error] deleteTask : $id $e");
     }
   }
 
@@ -98,12 +106,14 @@ class ToDoController extends GetxController {
     // 중간 위치로 이동시  위/아래 weight 평균 값 / 2
     double upperWeight = todoList[newIndex - 1].weight!;
     double lowerWeight = todoList[newIndex].weight!;
+    logger.d("calculateNewWeight: 주입될 인덱스 : $newIndex, 가중치 : ${(upperWeight + lowerWeight) / 2}");
     return (upperWeight + lowerWeight) / 2;
   }
 
   void setDraggingItem(ToDoModel? item) {
     draggingItem.value = item;
     update();
+    logger.d("setDraggingItem: ${item?.title ?? 'None'}");
   }
 
   Future<void> updateTaskPosition(
@@ -112,8 +122,10 @@ class ToDoController extends GetxController {
       _toDoService.updateTaskStatus(taskId, newStatus, newWeight);
 
       await fetchTaskData();
+      logger.i("[SUCCESS] 변경 아이디: $taskId, 변경 상태=$newStatus, 변경 가중치=$newWeight");
     } catch (e) {
-      Get.snackbar('Error', '테스트 업데이트 실패 $e');
+      Get.snackbar('Error', '테스크 업데이트 실패');
+      logger.e("[Error] updateTaskPosition: $e");
     }
   }
 
@@ -127,5 +139,6 @@ class ToDoController extends GetxController {
     ).then((result) {
       onSave(result);
     });
+    logger.d("showModal: ${todo?.title ?? 'None'}");
   }
 }

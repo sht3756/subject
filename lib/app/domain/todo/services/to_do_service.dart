@@ -1,12 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:subject/app/domain/todo/models/to_do_model.dart';
+import 'package:logger/logger.dart';
 
 class ToDoService {
   final FirebaseFirestore _fb = FirebaseFirestore.instance;
+  final Logger logger = Logger();
 
   Future<List<ToDoModel>> fetchTasks() async {
-    final snapshot = await _fb.collection('tasks').where('isDelete', isNotEqualTo: true).get();
-    return snapshot.docs.map((doc) => ToDoModel.fromJson(doc.data())).toList();
+    try {
+      final snapshot = await _fb.collection('tasks').where('isDelete', isNotEqualTo: true).get();
+
+      logger.i("[SUCCESS-Service] fetchTasks:");
+
+      return snapshot.docs.map((doc) => ToDoModel.fromJson(doc.data())).toList();
+    } catch(e) {
+      logger.e("[Error-Service] fetchTasks: $e");
+      return [];
+    }
+
   }
 
   Future<bool> createTask(ToDoModel todo) async {
@@ -45,10 +56,10 @@ class ToDoService {
           'lastKanName': newLastKanName,
         });
       });
-
+      logger.i("[SUCCESS-Service] createTask: ${todo.id}");
       return true;
-    } catch (e, s) {
-      print('createTask Error : $e , $s');
+    } catch (e) {
+      logger.e("[Error-Service] createTask: ${todo.id} $e");
       return false;
     }
   }
@@ -60,26 +71,35 @@ class ToDoService {
         'content': todo.content,
         'worker': todo.worker,
       });
+      logger.i("[SUCCESS-Service] updateTaskDetails: ${todo.id}");
       return true;
     } catch (e) {
-      print('updateTaskDetails Error : $e');
+      logger.e("[Error-Service] updateTaskDetails: ${todo.id} $e");
       return false;
     }
   }
 
   Future<void> updateTaskStatus(
       String taskId, String newStatus, double newWeight) async {
-    await _fb.collection('tasks').doc(taskId).update({
-      'status': newStatus,
-      'weight': newWeight,
-    });
+    try {
+      await _fb.collection('tasks').doc(taskId).update({
+        'status': newStatus,
+        'weight': newWeight,
+      });
+      logger.i("[SUCCESS-Service] updateTaskStatus: $taskId");
+    } catch(e) {
+      logger.e("[Error-Service] updateTaskStatus: $taskId $e");
+    }
+
   }
 
   Future<bool> deleteTask(String id) async {
     try {
       await _fb.collection('tasks').doc(id).update({'isDelete': true});
+      logger.i("[SUCCESS-Service] deleteTask: $id");
       return true;
     } catch (e) {
+      logger.e("[Error-Service] deleteTask: $id $e");
       return false;
     }
   }
