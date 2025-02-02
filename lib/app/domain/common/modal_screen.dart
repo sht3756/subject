@@ -29,21 +29,21 @@ class _ModalScreenState extends State<ModalScreen> {
   void initState() {
     super.initState();
     isEditMode = widget.isEditMode ?? false;
-    getMemberList();
+    getUserList();
     titleController = TextEditingController(text: widget.todo?.title);
     contentController = TextEditingController(text: widget.todo?.content);
     selectedWorker = widget.todo?.worker;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await getMemberList();
+      await getUserList();
     });
   }
 
-  Future<void> getMemberList() async {
-    List<UserModel> members = await AuthController.to.fetchMemberList();
+  Future<void> getUserList() async {
+    List<UserModel> users = await AuthController.to.fetchUserList();
 
     setState(() {
-      usersList = members.map((member) => member.name).toSet().toList();
+      usersList = users.map((user) => user.name).toSet().toList();
     });
 
     if (selectedWorker != null && !usersList.contains(selectedWorker)) {
@@ -61,6 +61,7 @@ class _ModalScreenState extends State<ModalScreen> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -108,11 +109,6 @@ class _ModalScreenState extends State<ModalScreen> {
               ),
               const SizedBox(height: 16),
               _buildWorkerDropdown(),
-              // _buildEditableField(
-              //   label: '담당자',
-              //   controller: workerController,
-              //   isEditMode: isEditMode,
-              // ),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -169,7 +165,7 @@ class _ModalScreenState extends State<ModalScreen> {
     required bool isEditMode,
   }) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           label,
@@ -211,7 +207,7 @@ class _ModalScreenState extends State<ModalScreen> {
                   controller.text,
                   style: const TextStyle(
                     fontSize: 16,
-                    color: Colors.black87,
+                    color: Colors.black,
                   ),
                 ),
               ),
@@ -234,6 +230,8 @@ class _ModalScreenState extends State<ModalScreen> {
         const SizedBox(height: 8),
         isEditMode && usersList.isNotEmpty
             ? DropdownButtonFormField<String>(
+                hint: const Text('담당자를 선택해주세요!'),
+                borderRadius: BorderRadius.circular(8),
                 value: selectedWorker,
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(
@@ -244,10 +242,14 @@ class _ModalScreenState extends State<ModalScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
+                dropdownColor: Colors.white,
                 items: usersList
                     .map((user) => DropdownMenuItem<String>(
                           value: user,
-                          child: Text(user),
+                          child:
+                              user == AuthController.to.myUserData.value!.name
+                                  ? Text('$user (본인)')
+                                  : Text(user),
                         ))
                     .toList(),
                 onChanged: (value) {
