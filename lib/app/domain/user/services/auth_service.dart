@@ -17,8 +17,30 @@ class AuthService {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
           email: email, password: password);
       return userCredential.user;
-    } catch (e) {
-      rethrow;
+    } on FirebaseAuthException catch (e) {
+      String failMsg = "";
+
+      switch (e.code) {
+        case 'invalid-credential':
+          failMsg = '이메일과 비밀번호를 확인해주세요.';
+          break;
+        case 'invalid-email':
+          failMsg = '유효하지 않은 이메일입니다.';
+          break;
+        case 'user-not-found':
+          failMsg = '사용자를 찾을 수 없습니다';
+          break;
+        case 'wrong-password':
+          failMsg = '비밀번호를 확인해 주세요';
+          break;
+        case 'too-many-requests':
+          failMsg = '반복적인 요청으로 잠시 후 다시 시도해 주세요';
+          break;
+        default:
+          failMsg = '알 수 없는 요청입니다.';
+          break;
+      }
+      throw Exception(failMsg);
     }
   }
 
@@ -29,35 +51,13 @@ class AuthService {
 
   // 회원가입
   Future<User?> createUserWithEmailAndPassword(
-      String email, String password) async {
+      String email, String password, String name) async {
     try {
       UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
 
-      await _createUser(email, password);
+      await _createUser(email, password, userCredential, name);
       return userCredential.user;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  // 회원 DB 등록
-  Future<void> _createUser(email, password) async {
-    try {
-      String uid = await firebaseAuthCreateUser(email, password);
-
-      UserModel userModel = UserModel(
-        uid: uid,
-        email: email,
-        name: 'shin',
-        registerDate: Timestamp.now(),
-        modifiedDate: Timestamp.now(),
-      );
-
-      await _fb
-          .collection('members')
-          .doc(userModel.email)
-          .set(userModel.toJson());
     } on FirebaseAuthException catch (e) {
       String failMsg = "";
 
@@ -69,33 +69,59 @@ class AuthService {
           failMsg = '유효하지 않은 이메일입니다.';
           break;
         case 'operation-not-allowed':
-          failMsg = '이메일을 인증하여 주세요. 메일 주소로 인증 메일을 보내 드렸습니다.';
+          failMsg = '사용이 중지된 이메일입니다.';
           break;
         case 'weak-password':
           failMsg = '암호가 너무 단순 합니다.';
+          break;
+        default:
+          failMsg = 'e ${e.code}';
           break;
       }
       throw Exception(failMsg);
     }
   }
 
-  Future<String> firebaseAuthCreateUser(String email, String password) async {
-    // firebase auth 등록
-    UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email, password: password);
+  // 회원 DB 등록
+  Future<void> _createUser(String email, String password,
+      UserCredential userCredential, String name) async {
+    try {
+      UserModel userModel = UserModel(
+        uid: userCredential.user!.uid,
+        email: email,
+        name: name,
+        registerDate: Timestamp.now(),
+        modifiedDate: Timestamp.now(),
+      );
 
-    return userCredential.user!.uid;
+      await _fb
+          .collection('users')
+          .doc(userModel.email)
+          .set(userModel.toJson());
+    } catch (e) {
+      print(e);
+    }
   }
 
   // 등록된 멤버리스트
-  Future<List<UserModel>> fetchMemberList() async {
-    QuerySnapshot<Map<String, dynamic>> memberSnapshot =
-        await _fb.collection('members').get();
+  Future<List<UserModel>> fetchUserList() async {
+    QuerySnapshot<Map<String, dynamic>> userDocumentSnapshot =
+        await _fb.collection('users').get();
 
-    if (memberSnapshot.docs.isEmpty) return [];
+    if (userDocumentSnapshot.docs.isEmpty) return [];
 
-    return memberSnapshot.docs
+    return userDocumentSnapshot.docs
         .map((doc) => UserModel.fromJson(doc.data()))
         .toList();
+  }
+
+  // 내 정보
+  Future<UserModel?> fetchMyUserData(String email) async {
+    QuerySnapshot<Map<String, dynamic>> userDocumentSnapshot =
+        await _fb.collection('users').where('email', isEqualTo: email).get();
+
+    if (userDocumentSnapshot.docs.isEmpty) return null;
+
+    return UserModel.fromJson(userDocumentSnapshot.docs.first.data());
   }
 }
