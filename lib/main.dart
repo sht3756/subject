@@ -18,7 +18,7 @@ void main() async {
     Get.put(AuthController());
     runApp(const MyApp());
   }, (error, stackTrace) {
-    logger.w('[runZonedGuarded!] $error, $stackTrace');
+    logger.w('[runZonedGuarded!!] $error, $stackTrace');
   });
 }
 
