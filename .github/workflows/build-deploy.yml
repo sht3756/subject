@@ -30,6 +30,6 @@ jobs:
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
-        github_token: sht3756subject # repository에서 사용할 시크릿 키 이름
+        github_token: SHT3756SUBJECT # repository에서 사용할 시크릿 키 이름
         publish_dir: build/web
         publish_branch: gh-pages
